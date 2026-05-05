@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+env/
+.Python
+
+# PyInstaller (executable build artifacts — 174MB, don't commit)
+build/
+dist/
+*.manifest
+*.spec.bak
+
+# Flask app runtime
+uploads/
+outputs/
+instance/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Working DB backups (keep dictionary.db which is the reference dictionary)
+*.db.backup
+*.db-journal

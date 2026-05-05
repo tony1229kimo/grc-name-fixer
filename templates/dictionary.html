@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字典管理 - GRC 團名修正工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app">
+        <header class="app-header">
+            <div class="brand">
+                <span class="logo">GRC</span>
+                <div>
+                    <h1>字典管理</h1>
+                    <p class="subtitle">檢視 / 編修 / 新增學過的縮寫對應</p>
+                </div>
+            </div>
+            <nav>
+                <a href="/" class="nav-link">首頁</a>
+                <a href="/dictionary" class="nav-link active">字典管理</a>
+            </nav>
+        </header>
+
+        <main class="dict-main">
+            <section class="panel">
+                <div class="dict-header">
+                    <div>
+                        <h2>📚 字典內容</h2>
+                        <p class="dict-summary">目前共 <strong id="dict-total">0</strong> 筆對應</p>
+                    </div>
+                    <div class="dict-actions">
+                        <input type="text" id="dict-search" placeholder="🔍 搜尋縮寫或完整名稱" class="input-search">
+                        <button class="btn btn-primary" id="btn-add-open">
+                            <span class="btn-icon">➕</span>
+                            <span>新增對應</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dict-tips">
+                    <strong>💡 什麼時候手動新增？</strong>
+                    <ul>
+                        <li>工具標為「未匹配」的縮寫（黃底紅字那些）— 你查到完整名後，來這裡手動補上，下次就認識了</li>
+                        <li>Delphi 系統改版後產生新的縮寫格式</li>
+                    </ul>
+                </div>
+
+                <table class="dict-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 28%">縮寫（Delphi 原文）</th>
+                            <th style="width: 40%">完整名稱</th>
+                            <th style="width: 8%">來源</th>
+                            <th style="width: 7%">使用次數</th>
+                            <th style="width: 12%">最後使用</th>
+                            <th style="width: 5%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dict-tbody">
+                        <tr><td colspan="6" class="empty-row">載入中...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+        <!-- 新增/編輯 Modal -->
+        <div class="modal" id="modal-add" hidden>
+            <div class="modal-backdrop" onclick="closeAddModal()"></div>
+            <div class="modal-box">
+                <div class="modal-head">
+                    <h3 id="modal-title">新增字典對應</h3>
+                    <button class="modal-close" onclick="closeAddModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>縮寫（Delphi 系統的原始文字）</label>
+                        <input type="text" id="input-abbr" placeholder="例: Yung Shin Phar...">
+                        <small>完整複製 Delphi 報表 A 欄的文字，包含 <code>...</code> 或 <code>^</code></small>
+                    </div>
+                    <div class="form-group">
+                        <label>完整名稱</label>
+                        <input type="text" id="input-full" placeholder="例: Yung Shin Pharmaceutical Industrial Meeting Group">
+                    </div>
+                    <div class="form-group">
+                        <label>備註（選填）</label>
+                        <input type="text" id="input-note" placeholder="可填：來源、特殊說明...">
+                    </div>
+                </div>
+                <div class="modal-foot">
+                    <button class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                    <button class="btn btn-primary" id="btn-save">儲存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 錯誤訊息 -->
+        <div class="toast toast-error" id="toast-error" hidden>
+            <span class="toast-icon">⚠️</span>
+            <span class="toast-msg"></span>
+            <button class="toast-close" onclick="closeToast()">✕</button>
+        </div>
+        <div class="toast toast-success" id="toast-success" hidden>
+            <span class="toast-icon">✅</span>
+            <span class="toast-msg"></span>
+            <button class="toast-close" onclick="closeToast()">✕</button>
+        </div>
+
+        <footer class="app-footer">
+            <small>© 台中勤美洲際酒店 · GRC 團名修正工具</small>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='dict.js') }}"></script>
+</body>
+</html>

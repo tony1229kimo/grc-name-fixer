@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRC 團名修正工具 - 台中勤美洲際</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app">
+        <header class="app-header">
+            <div class="brand">
+                <span class="logo">GRC</span>
+                <div>
+                    <h1>團名自動修正工具</h1>
+                    <p class="subtitle">台中勤美洲際酒店 · 業務部專用</p>
+                </div>
+            </div>
+            <nav>
+                <a href="/" class="nav-link active">首頁</a>
+                <a href="/dictionary" class="nav-link">字典管理 <span class="dict-count">{{ dict_count }}</span></a>
+            </nav>
+        </header>
+
+        <!-- Step 說明區 -->
+        <section class="steps-banner">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <strong>上傳縮寫檔</strong>
+                    <small>從 Delphi 系統跑出的原始 GRC 報表</small>
+                </div>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <strong>上傳參考檔 (選填)</strong>
+                    <small>含完整團名的扁平表（第一次用建議填）</small>
+                </div>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <strong>下載修正版</strong>
+                    <small>團名自動替換完畢，可直接使用</small>
+                </div>
+            </div>
+        </section>
+
+        <main class="main-grid">
+            <!-- 上傳區 -->
+            <section class="panel panel-upload">
+                <h2>📁 選擇檔案</h2>
+
+                <div class="upload-group required">
+                    <div class="upload-label">
+                        <span class="label-title">① 縮寫檔</span>
+                        <span class="label-badge required-badge">必填</span>
+                    </div>
+                    <p class="upload-desc">Delphi 系統直接跑出的 GRC 報表（團名含 <code>...</code> 的那份）</p>
+                    <div class="dropzone" id="dropzone-calendar" data-field="calendar">
+                        <input type="file" accept=".xlsx,.xlsm" hidden>
+                        <div class="dropzone-inner">
+                            <div class="dropzone-icon">📄</div>
+                            <div class="dropzone-text">
+                                <strong>拖曳檔案到這裡</strong>
+                                <span>或點擊選擇</span>
+                            </div>
+                        </div>
+                        <div class="dropzone-file" hidden>
+                            <span class="file-icon">✅</span>
+                            <span class="file-name"></span>
+                            <button type="button" class="file-remove">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="upload-group optional">
+                    <div class="upload-label">
+                        <span class="label-title">② 參考檔</span>
+                        <span class="label-badge optional-badge">選填</span>
+                    </div>
+                    <p class="upload-desc">
+                        扁平格式（0.xlsx 那種），含完整團名。
+                        <strong>字典有學過的縮寫就不用填</strong>，遇到新團才需要。
+                    </p>
+                    <div class="dropzone" id="dropzone-reference" data-field="reference">
+                        <input type="file" accept=".xlsx,.xlsm" hidden>
+                        <div class="dropzone-inner">
+                            <div class="dropzone-icon">📑</div>
+                            <div class="dropzone-text">
+                                <strong>拖曳檔案到這裡</strong>
+                                <span>或點擊選擇（可不填）</span>
+                            </div>
+                        </div>
+                        <div class="dropzone-file" hidden>
+                            <span class="file-icon">✅</span>
+                            <span class="file-name"></span>
+                            <button type="button" class="file-remove">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-process" class="btn btn-primary btn-large" disabled>
+                    <span class="btn-icon">🚀</span>
+                    <span>開始自動替換團名</span>
+                </button>
+
+                <div class="help-box">
+                    <strong>💡 小提醒</strong>
+                    <ul>
+                        <li>工具只會替換 <strong>A 欄團名</strong>，其他數字、日期、格式都不動</li>
+                        <li>找不到對應的團會用 <span class="highlight-sample">黃底紅字</span> 標示，方便你之後手動查</li>
+                        <li>用過的縮寫會自動記到字典，<strong>下次同一團免上傳參考檔</strong></li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 結果區 -->
+            <section class="panel panel-result" id="panel-result" hidden>
+                <h2>✨ 處理結果</h2>
+
+                <div class="result-stats">
+                    <div class="stat stat-total">
+                        <div class="stat-num" id="stat-total">—</div>
+                        <div class="stat-label">總筆數</div>
+                    </div>
+                    <div class="stat stat-dict">
+                        <div class="stat-num" id="stat-dict">—</div>
+                        <div class="stat-label">字典命中</div>
+                    </div>
+                    <div class="stat stat-ref">
+                        <div class="stat-num" id="stat-ref">—</div>
+                        <div class="stat-label">參考檔匹配</div>
+                    </div>
+                    <div class="stat stat-learned">
+                        <div class="stat-num" id="stat-learned">—</div>
+                        <div class="stat-label">新學到的縮寫</div>
+                    </div>
+                    <div class="stat stat-unmatched">
+                        <div class="stat-num" id="stat-unmatched">—</div>
+                        <div class="stat-label">未匹配 (需手動)</div>
+                    </div>
+                </div>
+
+                <div id="result-unmatched-box" hidden>
+                    <h3>⚠️ 以下這些團找不到對應的完整名稱</h3>
+                    <p class="hint">在輸出檔中這些列會以黃底紅字標示，請打開後手動查補。</p>
+                    <div class="unmatched-list" id="unmatched-list"></div>
+                </div>
+
+                <div class="result-actions">
+                    <a href="#" class="btn btn-primary btn-large" id="btn-download">
+                        <span class="btn-icon">⬇️</span>
+                        <span>下載修正版檔案</span>
+                    </a>
+                    <button class="btn btn-secondary" id="btn-reset">
+                        <span>處理下一份</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 處理中遮罩 -->
+            <div class="overlay" id="overlay" hidden>
+                <div class="overlay-box">
+                    <div class="spinner"></div>
+                    <div class="overlay-text">處理中，請稍候...</div>
+                </div>
+            </div>
+
+            <!-- 錯誤訊息 -->
+            <div class="toast toast-error" id="toast-error" hidden>
+                <span class="toast-icon">⚠️</span>
+                <span class="toast-msg"></span>
+                <button class="toast-close" onclick="closeToast()">✕</button>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <small>© 台中勤美洲際酒店 · GRC 團名修正工具</small>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
