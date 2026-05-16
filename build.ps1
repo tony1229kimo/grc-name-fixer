@@ -53,8 +53,10 @@ Write-Host "=================================" -ForegroundColor Cyan
 Write-Host ""
 
 # ---------- 2. PyInstaller ----------
+# dist 資料夾名稱保留中文(同事解壓後看到的資料夾)
+# zip 檔名用 ASCII(避免 GitHub 把中文 sanitize 成 . 變成「GRC-.-v1.1.0.zip」)
 $distDir = 'dist\GRC-團名修正工具'
-$zipPath = "dist\GRC-團名修正工具-$tag.zip"
+$zipPath = "dist\grc-name-fixer-$tag.zip"
 
 if (-not $SkipBuild) {
     # 確認 pyinstaller 可用
@@ -97,6 +99,17 @@ if (-not $Release) {
 $gh = Get-Command gh -ErrorAction SilentlyContinue
 if (-not $gh) {
     Write-Error "找不到 gh CLI。請先裝: winget install GitHub.cli"
+}
+
+# 確認 gh 已登入(否則 release create 會吐 exit 4 但不講清楚)
+& gh auth status 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Error @"
+gh CLI 還沒登入 GitHub。請先跑:
+    gh auth login
+然後選 GitHub.com → HTTPS → Login with a web browser,
+照指示完成後再重跑本腳本。
+"@
 }
 
 # 確認 git 是乾淨的(避免發了 release 但 code 沒同步)
