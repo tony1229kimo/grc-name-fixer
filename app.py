@@ -9,6 +9,7 @@ Flask 網頁主程式
 from __future__ import annotations
 
 import os
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -33,8 +34,24 @@ DATA_DIR = Path(os.environ.get("GRC_DATA_DIR") or str(MODULE_DIR))
 
 UPLOAD_DIR = DATA_DIR / "uploads"
 OUTPUT_DIR = DATA_DIR / "outputs"
+LOG_DIR = DATA_DIR / "logs"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+JOB_ID_RE = re.compile(r"^[a-f0-9]{32}$")
+
+
+def _log_error(prefix: str, err_id: str, detail: str) -> None:
+    """把錯誤詳細寫到 logs/error.log，給同事回報用"""
+    log_file = LOG_DIR / "error.log"
+    try:
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"\n=== [{datetime.now():%Y-%m-%d %H:%M:%S}] {prefix} 代號 {err_id} ===\n")
+            f.write(detail)
+            f.write("\n")
+    except OSError:
+        pass
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_EXT = {".xlsx", ".xlsm"}
@@ -60,7 +77,7 @@ def _save_upload(file_storage, prefix: str) -> Path:
 
 
 def _cleanup_old_files(days: int = 3):
-    """清理 3 天前的上傳 / 輸出檔"""
+    """清理 3 天前的上傳 / 輸出檔（含 .name sidecar）"""
     from time import time
     now = time()
     cutoff = now - days * 86400
@@ -114,10 +131,13 @@ def api_process():
     if reference_file and reference_file.filename:
         reference_path = _save_upload(reference_file, "reference")
 
-    # 輸出檔名：在原檔名加上 _fixed
+    # 產出檔在硬碟上一律用純 ASCII UUID 命名（避免中文 / 怪字元造成下載失敗）
+    # 「給使用者看的友善檔名」另存 sidecar，由 download 路由設給瀏覽器
+    job_id = uuid.uuid4().hex
+    output_path = OUTPUT_DIR / f"{job_id}.xlsx"
+
     original_name = Path(calendar_file.filename).stem
-    output_name = f"{original_name}_已修正_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
-    output_path = OUTPUT_DIR / output_name
+    download_name = f"{original_name}_已修正_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
 
     try:
         summary = matcher.process(
@@ -134,15 +154,24 @@ def api_process():
         }), 400
     except Exception as e:
         import traceback
+        err_id = uuid.uuid4().hex[:8]
         err_detail = traceback.format_exc()
-        print(f"[處理錯誤-未知]\n{err_detail}")
+        print(f"[處理錯誤-未知 代號 {err_id}]\n{err_detail}")
+        _log_error("處理錯誤-未知", err_id, err_detail)
         return jsonify({
             "ok": False,
-            "error": f"處理過程發生錯誤：{type(e).__name__}: {e}"
+            "error": (
+                f"處理時發生未預期錯誤（代號 {err_id}）。"
+                f"請把 logs/error.log 傳給 IT 協助排查。"
+            ),
         }), 500
 
-    # 為了前端下載，回傳 job_id（檔名）
-    job_id = output_path.name
+    # 寫 sidecar 記錄友善檔名（給 download 路由用）
+    try:
+        (OUTPUT_DIR / f"{job_id}.name").write_text(download_name, encoding="utf-8")
+    except OSError:
+        pass  # 寫不進去就算了，前端還是會用 download_name 設 a[download] attr
+
     return jsonify({
         "ok": True,
         "job_id": job_id,
@@ -155,21 +184,31 @@ def api_process():
             "unmatched": summary.unmatched,
             "unmatched_rows": summary.unmatched_rows,
         },
-        "download_name": output_name,
+        "download_name": download_name,
     })
 
 
 @app.route("/api/download/<job_id>")
 def api_download(job_id: str):
-    # 安全：只允許檔名型 id
-    safe = secure_filename(job_id)
-    path = OUTPUT_DIR / safe
+    # 安全：job_id 一定是 32 字元 hex（UUID4），否則 reject
+    if not JOB_ID_RE.match(job_id):
+        abort(400)
+    path = OUTPUT_DIR / f"{job_id}.xlsx"
     if not path.exists() or not path.is_file():
         abort(404)
+    # 讀回友善檔名（給瀏覽器顯示用）；Flask/Werkzeug 會自動做 RFC 5987 編碼，中文 OK
+    name_file = OUTPUT_DIR / f"{job_id}.name"
+    if name_file.exists():
+        try:
+            download_name = name_file.read_text(encoding="utf-8").strip() or "fixed.xlsx"
+        except OSError:
+            download_name = "fixed.xlsx"
+    else:
+        download_name = "fixed.xlsx"
     return send_file(
         str(path),
         as_attachment=True,
-        download_name=safe,
+        download_name=download_name,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
