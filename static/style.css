@@ -828,3 +828,48 @@ nav {
     .input-search { min-width: auto; }
     .dict-table { font-size: 0.82rem; }
 }
+
+/* ===== 新版本通知 banner ===== */
+.update-banner {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+    border-bottom: 1px solid #fbbf24;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.update-banner-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.update-banner-icon { font-size: 1.2em; }
+.update-banner-text { flex: 1; color: #78350f; min-width: 200px; }
+.update-banner-text strong { margin-right: 6px; }
+.update-banner-btn {
+    background: #d97706;
+    color: white !important;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none !important;
+    font-weight: 600;
+    font-size: .9em;
+    transition: background .15s;
+    white-space: nowrap;
+}
+.update-banner-btn:hover { background: #b45309; }
+.update-banner-close {
+    background: transparent;
+    border: none;
+    font-size: 1.1em;
+    color: #78350f;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1;
+}
+.update-banner-close:hover { background: rgba(0,0,0,.08); }

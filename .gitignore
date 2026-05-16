@@ -18,7 +18,10 @@ dist/
 # Flask app runtime
 uploads/
 outputs/
+logs/
 instance/
+# 同事執行時自動從 dictionary.seed.db 種出來的累積學習版,不該入庫
+dictionary.db
 
 # Environment / secrets
 .env
@@ -34,6 +37,9 @@ Thumbs.db
 # Logs
 *.log
 
-# Working DB backups (keep dictionary.db which is the reference dictionary)
+# Working DB backups (keep dictionary.seed.db which is the reference dictionary seed)
 *.db.backup
 *.db-journal
+
+# docx 編輯暫存 (unpack/repack 中介)
+.docx-work/

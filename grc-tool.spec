@@ -8,10 +8,13 @@ PyInstaller spec file for GRC 團名修正工具
     ├── GRC-團名修正工具.exe
     ├── _internal/...                (Python runtime + libraries)
     ├── templates/, static/          (網頁資源)
-    └── dictionary.db                (預灌字典，複製到 exe 旁邊)
+    └── dictionary.seed.db           (預灌字典種子)
 
 第一次執行時，launcher 會檢查 exe 目錄是否有 dictionary.db，
-若無則從打包資源複製一份過去（之後持續累積使用）。
+若無則從 dictionary.seed.db 複製一份過去（之後持續累積使用）。
+
+這樣設計的好處：升級時新 zip 解壓覆蓋會更新 dictionary.seed.db，
+但同事的 dictionary.db（含累積學習）不會被沖掉。
 """
 
 block_cipher = None
@@ -23,7 +26,7 @@ a = Analysis(
     datas=[
         ('templates', 'templates'),
         ('static', 'static'),
-        ('dictionary.db', '.'),     # 預灌字典當作 seed
+        ('dictionary.seed.db', '.'),   # 預灌字典(種子);launcher 第一次跑會複製成 dictionary.db
     ],
     hiddenimports=[
         'flask',
@@ -32,6 +35,7 @@ a = Analysis(
         'parser',
         'matcher',
         'app',
+        '_version',
     ],
     hookspath=[],
     hooksconfig={},

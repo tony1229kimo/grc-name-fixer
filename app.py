@@ -8,8 +8,12 @@ Flask 網頁主程式
 """
 from __future__ import annotations
 
+import json
 import os
 import re
+import time
+import urllib.error
+import urllib.request
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +26,7 @@ from werkzeug.utils import secure_filename
 import database
 import matcher
 from parser import parse_calendar_report, parse_flat_reference
+from _version import VERSION, RELEASES_API_URL, RELEASES_PAGE_URL
 
 # ---------- 基本設定 ----------
 
@@ -211,6 +216,63 @@ def api_download(job_id: str):
         download_name=download_name,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
+# ---------- API：版本檢查（自動更新通知） ----------
+
+_VERSION_CACHE: dict = {"latest": None, "checked_at": 0.0}
+_VERSION_CACHE_TTL = 4 * 60 * 60  # 4 小時:GitHub API rate limit 60/hr,夠用有餘
+
+
+def _parse_version(s: str | None) -> tuple:
+    if not s:
+        return (0,)
+    parts = s.lstrip("vV").strip().split(".")
+    try:
+        return tuple(int(p) for p in parts)
+    except ValueError:
+        return (0,)
+
+
+def _is_newer(latest: str | None, current: str) -> bool:
+    if not latest:
+        return False
+    return _parse_version(latest) > _parse_version(current)
+
+
+def _fetch_latest_version() -> str | None:
+    """打 GitHub Releases API。失敗(網路斷、rate limit、無 release)就回 None。"""
+    try:
+        req = urllib.request.Request(
+            RELEASES_API_URL,
+            headers={"User-Agent": f"grc-name-fixer/{VERSION}"},
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.load(resp)
+            return data.get("tag_name")
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+        return None
+
+
+def _get_latest_version_cached() -> str | None:
+    now = time.time()
+    if now - _VERSION_CACHE["checked_at"] < _VERSION_CACHE_TTL:
+        return _VERSION_CACHE["latest"]
+    latest = _fetch_latest_version()
+    _VERSION_CACHE["latest"] = latest
+    _VERSION_CACHE["checked_at"] = now
+    return latest
+
+
+@app.route("/api/version")
+def api_version():
+    latest = _get_latest_version_cached()
+    return jsonify({
+        "current": VERSION,
+        "latest": latest,
+        "has_update": _is_newer(latest, VERSION),
+        "release_url": RELEASES_PAGE_URL,
+    })
 
 
 # ---------- API：字典管理 ----------

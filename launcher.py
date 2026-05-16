@@ -18,6 +18,8 @@ import time
 import webbrowser
 from pathlib import Path
 
+from _version import VERSION
+
 
 PORT_START = 5000
 PORT_MAX_TRIES = 20
@@ -56,14 +58,17 @@ def ensure_data_dirs():
 
 def copy_seed_db_if_missing():
     """
-    第一次啟動時：若工作目錄沒有 dictionary.db，但打包資源中有預灌版 → 複製過去。
-    之後就都用工作目錄的那份（可持續累積）。
+    第一次啟動時：若工作目錄沒有 dictionary.db，從 dictionary.seed.db 複製一份。
+    之後就都用工作目錄的 dictionary.db（持續累積學習）。
+
+    這樣設計的好處：升級時新 zip 解壓覆蓋會更新 dictionary.seed.db，
+    但同事的 dictionary.db（含累積學習）不會被沖掉。
     """
     target = data_path("dictionary.db")
     if target.exists():
         return
-    seeded = Path(resource_path("dictionary.db"))
-    if seeded.exists() and seeded.resolve() != target.resolve():
+    seeded = Path(resource_path("dictionary.seed.db"))
+    if seeded.exists():
         import shutil
         shutil.copy2(str(seeded), str(target))
         print(f"[初始化] 已載入預灌字典 → {target.name}")
@@ -133,7 +138,7 @@ def open_browser_delayed(url: str, delay: float = 1.5):
 def banner(port: int):
     url = f"http://127.0.0.1:{port}"
     print("=" * 62)
-    print("  GRC 團名修正工具")
+    print(f"  GRC 團名修正工具  v{VERSION}")
     print("  台中勤美洲際酒店")
     print("=" * 62)
     print("")
