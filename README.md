@@ -1,90 +1,124 @@
 # GRC 團名修正工具
 
-台中勤美洲際酒店 · 業務部 GRC 報表自動修正工具
+> 台中勤美洲際酒店 · 業務部 GRC 報表自動修正工具
+> Delphi 跑出來的 GRC 報表,團名永遠是縮寫;這個工具一鍵自動補完整名稱。
 
-## 功能說明
+[![Latest Release](https://img.shields.io/github/v/release/tony1229kimo/grc-name-fixer?label=latest&color=green)](https://github.com/tony1229kimo/grc-name-fixer/releases/latest)
+[![License](https://img.shields.io/badge/license-internal-blue)]()
 
-Delphi 系統跑出的 GRC 報表，團名常常是縮寫（含 `...` 或 `^`）。
-這個工具會：
-1. 讀取「縮寫檔」+「參考檔」
-2. 自動用「到達日 + 營收」配對找出完整團名
-3. 替換 A 欄文字，**其他格式、數字、日期都不動**
-4. 遇到無法配對的，用**黃底紅字**標示讓你手動處理
-5. 自動學習新縮寫，以後同一團免上傳參考檔
+---
 
-## 使用方式（同仁版）
+## 🎯 我是業務同事 — 怎麼用
 
-### 啟動
-雙擊資料夾中的 **`start.bat`** →
-- 首次會自動安裝需要的套件（需要網路）
-- 瀏覽器會自動開啟 `http://127.0.0.1:5000`
-- **要停止時，直接關掉黑色視窗即可**
+> ⏱ **3 分鐘安裝、之後一輩子按一鍵搞定**
 
-### 處理檔案
-1. 把 Delphi 跑出的 GRC 報表拖到「① 縮寫檔」
-2. （可選）把含完整團名的扁平表拖到「② 參考檔」
-3. 按「開始自動替換團名」
-4. 看結果、下載修正版
+### 1. 下載
 
-### 字典管理
-上方「字典管理」頁可以：
-- 查看目前學到的所有縮寫對應
-- 搜尋、新增、刪除
-- 把「未匹配」的團手動補進字典，下次就認識了
+👉 **[點此前往最新版下載頁面](https://github.com/tony1229kimo/grc-name-fixer/releases/latest)**
 
-## 安裝需求
+在頁面下方 **Assets** 區塊,點 `grc-name-fixer-v1.x.x.zip` 下載(約 36 MB)。
 
-- Windows 10 / 11
-- Python 3.10 以上（安裝時請勾選 "Add to PATH"）
-- 首次執行需網路連線（自動安裝套件）
+### 2. 安裝
 
-## 檔案結構
+1. 解壓縮 zip,**整個資料夾**放到下面任一處:
+   - ✅ **桌面**
+   - ✅ `C:\GRC工具\`
+   - ✅ D 槽根目錄
+   - ❌ **不要放** OneDrive / Dropbox / Program Files / 公司網路硬碟
+2. 雙擊資料夾裡的 **`GRC-團名修正工具.exe`**
+3. 第一次 Windows 跳藍色警告 → 點「**其他資訊**」→「**仍要執行**」
+4. 黑色視窗會自動跳出 + 瀏覽器自動開啟工具畫面 = 成功
+
+### 3. 使用
+
+1. 拖 Delphi 報表到「① 縮寫檔」
+2. (選填) 拖含完整團名的扁平表到「② 參考檔」
+3. 按「**🚀 開始自動替換團名**」
+4. 看統計結果、按「**⬇️ 下載修正版檔案**」
+
+完整教學見 **[`使用教學.docx`](使用教學.docx)**(下載 zip 裡也有一份)。
+
+### 🔔 之後會自動提醒更新
+
+工具頁面頂部會跳黃色 banner 通知新版可下載。點「立即前往下載」→ 重新下載 zip → 覆蓋舊資料夾 → 重啟即可。**你累積的字典 `dictionary.db` 不會被覆蓋**。
+
+---
+
+## 🛠️ 我是開發者 — 怎麼 build / 改 code
+
+### 開發環境啟動
+
+```powershell
+# 1. 裝 Python deps
+pip install -r requirements.txt
+
+# 2. 啟動 dev server
+python launcher.py
+# 或直接 python app.py(沒有 port fallback / single-instance)
+```
+
+預設跑在 http://127.0.0.1:5000
+
+### 打包 + 發 release
+
+```powershell
+# 改 _version.py 的 VERSION
+# git commit + git push
+
+# 一鍵打包 + zip + GitHub Release
+.\build.ps1 -Release
+```
+
+腳本會做:
+1. `pyinstaller grc-tool.spec --clean` → `dist\GRC-團名修正工具\`
+2. 壓 `dist\grc-name-fixer-v{VERSION}.zip`
+3. `gh release create v{VERSION}` 上傳 zip
+
+⚠ 需要先 `gh auth login` 一次性登入。
+
+### 檔案結構
 
 ```
 grc-name-fixer/
-├── start.bat              ← 雙擊這個啟動
-├── app.py                 ← Flask 主程式
-├── parser.py              ← Excel 解析
-├── matcher.py             ← 匹配 & 替換
-├── database.py            ← SQLite 字典
+├── launcher.py            ← 應用程式入口(port fallback / single-instance / banner)
+├── app.py                 ← Flask 主程式(API endpoints)
+├── parser.py              ← Excel 解析(openpyxl)
+├── matcher.py             ← 匹配 & 替換邏輯
+├── database.py            ← SQLite 字典 CRUD
 ├── seed.py                ← 預灌字典工具
-├── requirements.txt       ← Python 套件
-├── dictionary.db          ← 字典資料庫（會自動建立）
-├── templates/             ← 網頁
-├── static/                ← CSS/JS
-├── uploads/               ← 暫存上傳檔（自動清理）
-└── outputs/               ← 產出檔（自動清理）
+├── _version.py            ← VERSION 常量 + GitHub repo 設定
+├── grc-tool.spec          ← PyInstaller 設定
+├── build.ps1              ← 一鍵 build + release 腳本
+├── requirements.txt       ← Flask + openpyxl
+├── dictionary.seed.db     ← 預灌字典種子(bundle 進 zip)
+├── templates/             ← Jinja2 templates
+├── static/                ← CSS/JS(含 version-check.js)
+└── 使用教學.docx           ← 給同事的完整教學
 ```
 
-## 備份字典
+### 預灌字典(累積歷史資料用)
 
-想備份/遷移字典，直接複製 `dictionary.db` 即可。
-
-## 預灌字典（初次安裝時用）
-
-手邊有歷史的 0.xlsx + 縮寫檔時，可以一次灌入：
+手邊有歷史的 `0.xlsx` + 縮寫檔時,一次灌入種子:
 
 ```bash
 python seed.py <0.xlsx> <縮寫檔.xlsx>
+# 跑完會更新 dictionary.db,可手動 cp 成 dictionary.seed.db 進下一版
 ```
 
-## 匹配邏輯
+### 匹配邏輯
 
-工具用「到達日期 + 總營收」當匹配 key：
-1. 先查本地字典（最快）
-2. 字典沒有 → 查參考檔
-3. 匹配成功 → 學入字典（下次同縮寫免查）
-4. 匹配失敗 → A 欄保留原文，加黃底紅字標示
+用「到達日期 + 總營收」當匹配 key:
+1. 先查本地字典(最快)
+2. 字典沒有 → 查上傳的參考檔
+3. 匹配成功 → 學入字典(下次同縮寫免查)
+4. 匹配失敗 → A 欄保留原文 + 加黃底紅字標示
 
-容忍 ±2 日的到達日差異（因 Delphi 有時顯示實際 pickup 日而非 contract arrival）。
+容忍 ±2 日的到達日差異(因 Delphi 有時顯示實際 pickup 日而非 contract arrival)。
 
-## 疑難排解
+### Architecture 注意點
 
-**Q: 雙擊 start.bat 沒反應？**
-A: 確認已安裝 Python 並加到 PATH。重開命令提示字元執行 `python --version`。
-
-**Q: 說 port 5000 被占用？**
-A: 改 `app.py` 底部的 `port=5000` 為其他數字（例如 5500）。
-
-**Q: 字典學錯了怎麼辦？**
-A: 到「字典管理」頁搜尋該縮寫 → 刪除 → 下次重學；或先刪再手動新增正確的。
+- **dictionary.seed.db vs dictionary.db** — seed 是 bundle 進 zip 的種子;launcher 第一次跑會 copy 成 dictionary.db。這樣升級新版本(覆蓋整個資料夾)不會沖掉同事累積的學習
+- **output 檔案** — 存在硬碟用純 ASCII UUID 命名(`outputs/{uuid}.xlsx`),中文友善檔名透過 sidecar `{uuid}.name` 傳給瀏覽器(RFC 5987 編碼)。早期版本用中文檔名 + werkzeug `secure_filename()` 會把中文砍光導致 404
+- **/api/version** — 4hr cache 打 GitHub Releases API 比對版號,前端 `static/version-check.js` 顯示通知 banner
+- **Port fallback** — launcher 從 5000 試到 5019,找不到就吐錯誤
+- **Single-instance** — 用 `%TEMP%\grc-name-fixer.lock` 記目前 port,雙開時偵測到就提示已執行
